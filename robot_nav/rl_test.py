@@ -1,33 +1,41 @@
 from models.TD3.TD3 import TD3
+from models.CNNTD3.CNNTD3 import CNNTD3
 
 import torch
 import numpy as np
 from robot_nav.SIM_ENV.sim import SIM
 import yaml
 
+import pathlib  # 导入pathlib处理跨平台路径
+# 基于当前脚本文件的位置拼接路径
+current_dir = pathlib.Path(__file__).parent  # 获取rl_test.py所在的robot_nav目录
+eval_points_path = current_dir / "eval_points.yaml"
 
 def main(args=None):
     """Main testing function"""
     action_dim = 2  # number of actions produced by the model
     max_action = 1  # maximum absolute value of output actions
-    state_dim = 25  # number of input values in the neural network (vector length of state input)
+    #state_dim = 25  # number of input values in the neural network (vector length of state input)
+    state_dim = 185  # number of input values in the neural network (vector length of state input)
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
     )  # using cuda if it is available, cpu otherwise
     epoch = 0  # epoch number
     max_steps = 300  # maximum number of steps in single episode
 
-    model = TD3(
+    model = CNNTD3(
         state_dim=state_dim,
         action_dim=action_dim,
         max_action=max_action,
         device=device,
         load_model=True,
-        model_name="TD3",
+        model_name="CNNTD3",
     )  # instantiate a model
 
     sim = SIM(world_file="worlds/eval_world.yaml")  # instantiate environment
-    with open("robot_nav/eval_points.yaml") as file:
+    # with open("robot_nav/eval_points.yaml") as file:
+    #     points = yaml.safe_load(file)
+    with open(eval_points_path, encoding="utf-8") as file:
         points = yaml.safe_load(file)
     robot_poses = points["robot"]["poses"]
     robot_goals = points["robot"]["goals"]

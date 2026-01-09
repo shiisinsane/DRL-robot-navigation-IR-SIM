@@ -443,19 +443,36 @@ class CNNTD3(object):
             filename (str): Base filename for saved files.
             directory (Path): Path to load the model files from.
         """
+        # self.actor.load_state_dict(
+        #     torch.load("%s/%s_actor.pth" % (directory, filename))
+        # )
+        # self.actor_target.load_state_dict(
+        #     torch.load("%s/%s_actor_target.pth" % (directory, filename))
+        # )
+        # self.critic.load_state_dict(
+        #     torch.load("%s/%s_critic.pth" % (directory, filename))
+        # )
+        # self.critic_target.load_state_dict(
+        #     torch.load("%s/%s_critic_target.pth" % (directory, filename))
+        # )
+        # print(f"Loaded weights from: {directory}")
+        """
+        加载模型参数，适配CPU/GPU环境
+        添加 map_location=self.device，自动映射到当前设备
+        """
         self.actor.load_state_dict(
-            torch.load("%s/%s_actor.pth" % (directory, filename))
+            torch.load(f"{directory}/{filename}_actor.pth", map_location=self.device)
         )
         self.actor_target.load_state_dict(
-            torch.load("%s/%s_actor_target.pth" % (directory, filename))
+            torch.load(f"{directory}/{filename}_actor_target.pth", map_location=self.device)
         )
         self.critic.load_state_dict(
-            torch.load("%s/%s_critic.pth" % (directory, filename))
+            torch.load(f"{directory}/{filename}_critic.pth", map_location=self.device)
         )
         self.critic_target.load_state_dict(
-            torch.load("%s/%s_critic_target.pth" % (directory, filename))
+            torch.load(f"{directory}/{filename}_critic_target.pth", map_location=self.device)
         )
-        print(f"Loaded weights from: {directory}")
+        print(f"Loaded weights from: {directory} (mapped to {self.device})")
 
     def prepare_state(self, latest_scan, distance, cos, sin, collision, goal, action):
         """
