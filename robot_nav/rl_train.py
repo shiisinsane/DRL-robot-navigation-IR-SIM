@@ -8,6 +8,7 @@ from utils import get_buffer
 
 def main(args=None):
     """Main training function"""
+    # CNNTD3参数配置
     action_dim = 2  # number of actions produced by the model
     max_action = 1  # maximum absolute value of output actions
     state_dim = 185  # number of input values in the neural network (vector length of state input)

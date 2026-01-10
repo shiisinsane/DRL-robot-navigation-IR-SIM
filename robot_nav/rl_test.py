@@ -15,7 +15,9 @@ def main(args=None):
     """Main testing function"""
     action_dim = 2  # number of actions produced by the model
     max_action = 1  # maximum absolute value of output actions
+    # TD3的参数
     #state_dim = 25  # number of input values in the neural network (vector length of state input)
+    # CNNTD3的参数
     state_dim = 185  # number of input values in the neural network (vector length of state input)
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"

@@ -1,5 +1,7 @@
 from robot_nav.models.SAC.SAC import SAC
-import statistics
+from robot_nav.models.CNNTD3.CNNTD3 import CNNTD3
+
+#import statistics
 import numpy as np
 import tqdm
 import matplotlib.pyplot as plt
@@ -10,23 +12,35 @@ from robot_nav.SIM_ENV.sim import SIM
 
 def main(args=None):
     """Main testing function"""
+    # CNNTD3的参数配置
     action_dim = 2  # number of actions produced by the model
     max_action = 1  # maximum absolute value of output actions
-    state_dim = 25  # number of input values in the neural network (vector length of state input)
+    # SAC的参数配置
+    #state_dim = 25  # number of input values in the neural network (vector length of state input)
+    # CNNTD3的参数配置
+    state_dim = 185  # number of input values in the neural network (vector length of state input)
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
     )  # using cuda if it is available, cpu otherwise
     epoch = 0  # epoch number
     max_steps = 300  # maximum number of steps in single episode
-    test_scenarios = 1000
+    test_scenarios = 500
 
-    model = SAC(
+    # model = SAC(
+    #     state_dim=state_dim,
+    #     action_dim=action_dim,
+    #     max_action=max_action,
+    #     device=device,
+    #     load_model=True,
+    #     model_name="SAC",
+    # )  # instantiate a model
+    model = CNNTD3(
         state_dim=state_dim,
         action_dim=action_dim,
         max_action=max_action,
         device=device,
         load_model=True,
-        model_name="SAC",
+        model_name="CNNTD3",
     )  # instantiate a model
 
     sim = SIM(
@@ -86,20 +100,34 @@ def main(args=None):
     steps_to_goal = np.array(steps_to_goal)
     lin_actions = np.array(lin_actions)
     ang_actions = np.array(ang_actions)
-    avg_step_reward = statistics.mean(total_reward)
-    avg_step_reward_std = statistics.stdev(total_reward)
-    avg_ep_reward = statistics.mean(reward_per_ep)
-    avg_ep_reward_std = statistics.stdev(reward_per_ep)
+    # avg_step_reward = statistics.mean(total_reward)
+    # avg_step_reward_std = statistics.stdev(total_reward)
+    # avg_ep_reward = statistics.mean(reward_per_ep)
+    # avg_ep_reward_std = statistics.stdev(reward_per_ep)
+    # avg_col = col / test_scenarios
+    # avg_goal = goals / test_scenarios
+    # avg_inter_step_rew = statistics.mean(inter_rew)
+    # avg_inter_step_rew_std = statistics.stdev(inter_rew)
+    # avg_steps_to_goal = statistics.mean(steps_to_goal)
+    # avg_steps_to_goal_std = statistics.stdev(steps_to_goal)
+    # mean_lin_action = statistics.mean(lin_actions)
+    # lin_actions_std = statistics.stdev(lin_actions)
+    # mean_ang_action = statistics.mean(ang_actions)
+    # ang_actions_std = statistics.stdev(ang_actions)
+    avg_step_reward = np.mean(total_reward)
+    avg_step_reward_std = np.std(total_reward)
+    avg_ep_reward = np.mean(reward_per_ep)
+    avg_ep_reward_std = np.std(reward_per_ep)
     avg_col = col / test_scenarios
     avg_goal = goals / test_scenarios
-    avg_inter_step_rew = statistics.mean(inter_rew)
-    avg_inter_step_rew_std = statistics.stdev(inter_rew)
-    avg_steps_to_goal = statistics.mean(steps_to_goal)
-    avg_steps_to_goal_std = statistics.stdev(steps_to_goal)
-    mean_lin_action = statistics.mean(lin_actions)
-    lin_actions_std = statistics.stdev(lin_actions)
-    mean_ang_action = statistics.mean(ang_actions)
-    ang_actions_std = statistics.stdev(ang_actions)
+    avg_inter_step_rew = np.mean(inter_rew)
+    avg_inter_step_rew_std = np.std(inter_rew)
+    avg_steps_to_goal = np.mean(steps_to_goal)
+    avg_steps_to_goal_std = np.std(steps_to_goal)
+    mean_lin_action = np.mean(lin_actions)
+    lin_actions_std = np.std(lin_actions)
+    mean_ang_action = np.mean(ang_actions)
+    ang_actions_std = np.std(ang_actions)
     print(f"avg_step_reward {avg_step_reward}")
     print(f"avg_step_reward_std: {avg_step_reward_std}")
     print(f"avg_ep_reward: {avg_ep_reward}")
