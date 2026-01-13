@@ -20,3 +20,7 @@ Jan10_09-31-42_d47：
 Jan11_00-42-39_LAPTOP：
 相关文件：rl_test.py
 第二次CNNTD3训练的简单测试
+
+Jan13_21-25-10_LAPTOP-3QPTCSUPCNNTD3
+相关文件：rl_test_random.py
+第二次CNNTD3更详细的训练，测试轮数500

@@ -1,4 +1,5 @@
 from robot_nav.models.CNNTD3.CNNTD3 import CNNTD3
+from pathlib import Path
 
 import torch
 import numpy as np
@@ -20,8 +21,8 @@ def main(args=None):
     epoch = 0  # starting epoch number
     episodes_per_epoch = 70  # how many episodes to run in single epoch
     episode = 0  # starting episode number
-    train_every_n = 2  # train and update network parameters every n episodes
-    training_iterations = 80  # how many batches to use for single training cycle
+    train_every_n = 4  # train and update network parameters every n episodes
+    training_iterations = 60  # how many batches to use for single training cycle
     batch_size = 64  # batch size for each training iteration
     max_steps = 300  # maximum number of steps in single episode
     steps = 0  # starting step number
@@ -32,15 +33,28 @@ def main(args=None):
     )
     save_every = 5  # save the model every n training cycles
 
+    # model = CNNTD3(
+    #     state_dim=state_dim,
+    #     action_dim=action_dim,
+    #     max_action=max_action,
+    #     device=device,
+    #     save_every=save_every,
+    #     load_model=False,
+    #     model_name="CNNTD3",
+    # )  # instantiate a model
     model = CNNTD3(
         state_dim=state_dim,
         action_dim=action_dim,
         max_action=max_action,
         device=device,
         save_every=save_every,
-        load_model=False,
+
+        load_model=True,
         model_name="CNNTD3",
+
+        load_directory=Path("robot_nav/models/CNNTD3/checkpoint"),
     )  # instantiate a model
+
 
     sim = SIM(
         world_file="worlds/robot_world.yaml", disable_plotting=False
