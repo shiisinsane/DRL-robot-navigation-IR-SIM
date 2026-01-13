@@ -1,4 +1,5 @@
 from pathlib import Path
+from torch.nn import MultiheadAttention  # 引入PyTorch多头注意力层
 
 import numpy as np
 import torch
@@ -34,6 +35,14 @@ class Actor(nn.Module):
 
         self.cnn1 = nn.Conv1d(1, 4, kernel_size=8, stride=4)
         self.cnn2 = nn.Conv1d(4, 8, kernel_size=8, stride=4)
+
+        # 多头自注意力层：输入特征维度=8，头数=2，支持batch_first格式
+        self.attention = MultiheadAttention(
+            embed_dim=8,
+            num_heads=2,
+            batch_first=True
+        )
+
         self.cnn3 = nn.Conv1d(8, 4, kernel_size=4, stride=2)
 
         self.goal_embed = nn.Linear(3, 10)
@@ -67,7 +76,16 @@ class Actor(nn.Module):
 
         l = F.leaky_relu(self.cnn1(laser))
         l = F.leaky_relu(self.cnn2(l))
-        l = F.leaky_relu(self.cnn3(l))
+
+        # 调整维度以适配注意力层：seq_len在前，特征在后
+        l_attention = l.permute(0, 2, 1)  # (batch_size, 9, 8)
+        # 自注意力计算：query=key=value，使用激光特征自身作为注意力输入
+        attn_output, _ = self.attention(l_attention, l_attention, l_attention)
+        # 还原维度以适配后续CNN层
+        l_attention = attn_output.permute(0, 2, 1)  # (batch_size, 8, 9)
+
+        #l = F.leaky_relu(self.cnn3(l))
+        l = F.leaky_relu(self.cnn3(l_attention))
         l = l.flatten(start_dim=1)
 
         g = F.leaky_relu(self.goal_embed(goal))
@@ -105,6 +123,14 @@ class Critic(nn.Module):
         super(Critic, self).__init__()
         self.cnn1 = nn.Conv1d(1, 4, kernel_size=8, stride=4)
         self.cnn2 = nn.Conv1d(4, 8, kernel_size=8, stride=4)
+
+        # 与Actor相同的多头自注意力层
+        self.attention = MultiheadAttention(
+            embed_dim=8,
+            num_heads=2,
+            batch_first=True
+        )
+
         self.cnn3 = nn.Conv1d(8, 4, kernel_size=4, stride=2)
 
         self.goal_embed = nn.Linear(3, 10)
@@ -149,7 +175,17 @@ class Critic(nn.Module):
 
         l = F.leaky_relu(self.cnn1(laser))
         l = F.leaky_relu(self.cnn2(l))
-        l = F.leaky_relu(self.cnn3(l))
+
+        # 维度调整
+        l_attention = l.permute(0, 2, 1)  # (batch_size, 9, 8)
+        # 自注意力计算
+        attn_output, _ = self.attention(l_attention, l_attention, l_attention)
+        # 维度还原
+        l_attention = attn_output.permute(0, 2, 1)  # (batch_size, 8, 9)
+
+
+        #l = F.leaky_relu(self.cnn3(l))
+        l = F.leaky_relu(self.cnn3(l_attention))
         l = l.flatten(start_dim=1)
 
         g = F.leaky_relu(self.goal_embed(goal))
