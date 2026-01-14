@@ -33,27 +33,27 @@ def main(args=None):
     )
     save_every = 5  # save the model every n training cycles
 
-    # model = CNNTD3(
-    #     state_dim=state_dim,
-    #     action_dim=action_dim,
-    #     max_action=max_action,
-    #     device=device,
-    #     save_every=save_every,
-    #     load_model=False,
-    #     model_name="CNNTD3",
-    # )  # instantiate a model
     model = CNNTD3(
         state_dim=state_dim,
         action_dim=action_dim,
         max_action=max_action,
         device=device,
         save_every=save_every,
-
-        load_model=True,
+        load_model=False,
         model_name="CNNTD3",
-
-        load_directory=Path("robot_nav/models/CNNTD3/checkpoint"),
     )  # instantiate a model
+    # model = CNNTD3(
+    #     state_dim=state_dim,
+    #     action_dim=action_dim,
+    #     max_action=max_action,
+    #     device=device,
+    #     save_every=save_every,
+    #
+    #     load_model=True,
+    #     model_name="CNNTD3",
+    #
+    #     load_directory=Path("robot_nav/models/CNNTD3/checkpoint"),
+    # )  # instantiate a model
 
 
     sim = SIM(

@@ -36,6 +36,8 @@ class Actor(nn.Module):
         self.cnn1 = nn.Conv1d(1, 4, kernel_size=8, stride=4)
         self.cnn2 = nn.Conv1d(4, 8, kernel_size=8, stride=4)
 
+        # ===== Cross Attention 用 =====
+        self.goal_attn_embed = nn.Linear(3, 8)
         # 多头自注意力层：输入特征维度=8，头数=2，支持batch_first格式
         self.attention = MultiheadAttention(
             embed_dim=8,
@@ -77,12 +79,30 @@ class Actor(nn.Module):
         l = F.leaky_relu(self.cnn1(laser))
         l = F.leaky_relu(self.cnn2(l))
 
-        # 调整维度以适配注意力层：seq_len在前，特征在后
-        l_attention = l.permute(0, 2, 1)  # (batch_size, 9, 8)
-        # 自注意力计算：query=key=value，使用激光特征自身作为注意力输入
-        attn_output, _ = self.attention(l_attention, l_attention, l_attention)
-        # 还原维度以适配后续CNN层
-        l_attention = attn_output.permute(0, 2, 1)  # (batch_size, 8, 9)
+
+        # ---------------- Cross Attention ----------------
+        # laser features: (B, 8, 9) → (B, 9, 8)
+        laser_seq = l.permute(0, 2, 1)
+
+        # goal: (B, 3) → (B, 1, 8)
+        goal_query = self.goal_attn_embed(goal).unsqueeze(1)
+
+        # Cross Attention: Q=goal, K/V=laser
+        attn_output, _ = self.attention(
+            query=goal_query,
+            key=laser_seq,
+            value=laser_seq
+        )  # (B, 1, 8)
+
+        # Broadcast 回序列长度 9
+        attn_output = attn_output.repeat(1, laser_seq.size(1), 1)  # (B, 9, 8)
+
+        # 还原为 CNN 输入格式
+        alpha = 0.1
+        #l_attention = attn_output.permute(0, 2, 1)  # (B, 8, 9)
+        l_attention = (laser_seq + alpha * attn_output).permute(0, 2, 1)
+        # -------------------------------------------------
+
 
         #l = F.leaky_relu(self.cnn3(l))
         l = F.leaky_relu(self.cnn3(l_attention))
@@ -124,6 +144,8 @@ class Critic(nn.Module):
         self.cnn1 = nn.Conv1d(1, 4, kernel_size=8, stride=4)
         self.cnn2 = nn.Conv1d(4, 8, kernel_size=8, stride=4)
 
+        # ===== Cross Attention 用 =====
+        self.goal_attn_embed = nn.Linear(3, 8)
         # 与Actor相同的多头自注意力层
         self.attention = MultiheadAttention(
             embed_dim=8,
@@ -176,12 +198,22 @@ class Critic(nn.Module):
         l = F.leaky_relu(self.cnn1(laser))
         l = F.leaky_relu(self.cnn2(l))
 
-        # 维度调整
-        l_attention = l.permute(0, 2, 1)  # (batch_size, 9, 8)
-        # 自注意力计算
-        attn_output, _ = self.attention(l_attention, l_attention, l_attention)
-        # 维度还原
-        l_attention = attn_output.permute(0, 2, 1)  # (batch_size, 8, 9)
+        # ---------------- Cross Attention ----------------
+        laser_seq = l.permute(0, 2, 1)  # (B, 9, 8)
+        goal_query = self.goal_attn_embed(goal).unsqueeze(1)  # (B, 1, 8)
+
+        attn_output, _ = self.attention(
+            query=goal_query,
+            key=laser_seq,
+            value=laser_seq
+        )  # (B, 1, 8)
+
+        attn_output = attn_output.repeat(1, laser_seq.size(1), 1)  # (B, 9, 8)
+
+        alpha = 0.1
+        #l_attention = attn_output.permute(0, 2, 1)  # (B, 8, 9)
+        l_attention = (laser_seq + alpha * attn_output).permute(0, 2, 1)
+        # -------------------------------------------------
 
 
         #l = F.leaky_relu(self.cnn3(l))
