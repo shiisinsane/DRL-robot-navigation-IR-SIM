@@ -44,6 +44,8 @@ class Actor(nn.Module):
             num_heads=2,
             batch_first=True
         )
+        self.attn_norm = nn.LayerNorm(8)
+        self.attn_alpha = nn.Parameter(torch.tensor(-3.0))
 
         self.cnn3 = nn.Conv1d(8, 4, kernel_size=4, stride=2)
 
@@ -79,28 +81,28 @@ class Actor(nn.Module):
         l = F.leaky_relu(self.cnn1(laser))
         l = F.leaky_relu(self.cnn2(l))
 
-
         # ---------------- Cross Attention ----------------
-        # laser features: (B, 8, 9) → (B, 9, 8)
-        laser_seq = l.permute(0, 2, 1)
-
-        # goal: (B, 3) → (B, 1, 8)
+        laser_seq = l.permute(0, 2, 1)  # (B, 9, 8)
         goal_query = self.goal_attn_embed(goal).unsqueeze(1)
 
-        # Cross Attention: Q=goal, K/V=laser
         attn_output, _ = self.attention(
             query=goal_query,
             key=laser_seq,
             value=laser_seq
         )  # (B, 1, 8)
 
-        # Broadcast 回序列长度 9
-        attn_output = attn_output.repeat(1, laser_seq.size(1), 1)  # (B, 9, 8)
+        # Normalize + scale control
+        attn_output = self.attn_norm(attn_output)
+        attn_output = F.normalize(attn_output, dim=-1)
 
-        # 还原为 CNN 输入格式
-        alpha = 0.1
-        #l_attention = attn_output.permute(0, 2, 1)  # (B, 8, 9)
-        l_attention = (laser_seq + alpha * attn_output).permute(0, 2, 1)
+        # Learnable gate (alpha ≈ 0 at start)
+        alpha = torch.sigmoid(self.attn_alpha)
+
+        # Only adjust global direction (NOT broadcast bias)
+        laser_mean = laser_seq.mean(dim=1, keepdim=True)
+        laser_seq = laser_seq + alpha * (attn_output - laser_mean)
+
+        l_attention = laser_seq.permute(0, 2, 1)
         # -------------------------------------------------
 
 
@@ -152,6 +154,8 @@ class Critic(nn.Module):
             num_heads=2,
             batch_first=True
         )
+        self.attn_norm = nn.LayerNorm(8)
+        self.attn_alpha = nn.Parameter(torch.tensor(-3.0))
 
         self.cnn3 = nn.Conv1d(8, 4, kernel_size=4, stride=2)
 
@@ -200,7 +204,7 @@ class Critic(nn.Module):
 
         # ---------------- Cross Attention ----------------
         laser_seq = l.permute(0, 2, 1)  # (B, 9, 8)
-        goal_query = self.goal_attn_embed(goal).unsqueeze(1)  # (B, 1, 8)
+        goal_query = self.goal_attn_embed(goal).unsqueeze(1)
 
         attn_output, _ = self.attention(
             query=goal_query,
@@ -208,11 +212,18 @@ class Critic(nn.Module):
             value=laser_seq
         )  # (B, 1, 8)
 
-        attn_output = attn_output.repeat(1, laser_seq.size(1), 1)  # (B, 9, 8)
+        # Normalize + scale control
+        attn_output = self.attn_norm(attn_output)
+        attn_output = F.normalize(attn_output, dim=-1)
 
-        alpha = 0.1
-        #l_attention = attn_output.permute(0, 2, 1)  # (B, 8, 9)
-        l_attention = (laser_seq + alpha * attn_output).permute(0, 2, 1)
+        # Learnable gate (alpha ≈ 0 at start)
+        alpha = torch.sigmoid(self.attn_alpha)
+
+        # Only adjust global direction (NOT broadcast bias)
+        laser_mean = laser_seq.mean(dim=1, keepdim=True)
+        laser_seq = laser_seq + alpha * (attn_output - laser_mean)
+
+        l_attention = laser_seq.permute(0, 2, 1)
         # -------------------------------------------------
 
 

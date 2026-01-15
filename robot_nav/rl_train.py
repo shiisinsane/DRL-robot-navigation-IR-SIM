@@ -57,7 +57,7 @@ def main(args=None):
 
 
     sim = SIM(
-        world_file="worlds/robot_world.yaml", disable_plotting=False
+        world_file="worlds/robot_world.yaml", disable_plotting=True
     )  # instantiate environment
     replay_buffer = get_buffer(
         model,
